@@ -213,6 +213,9 @@ def main():
 
     button_width = 250  # Updated button width to better fit the larger window
 
+    # Handle the window close button (X) to call the same function as the exit button
+    root.protocol("WM_DELETE_WINDOW", root.quit)
+
     #MARK: Language dictionary
     lang_dict = {
         "en": {
