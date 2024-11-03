@@ -82,8 +82,13 @@ python Bank.py
 
 ## Usage Guide
 **Adding an Account:** Click on "Add Account" and provide the necessary details such as account type, currency, exchange rate, and income percentage.
+
 **Viewing Accounts:** Select "View Accounts" to see a list of all your bank accounts.
+
 **Managing Credit Card Outcomes:** Use the respective buttons to add, view, update, or delete credit card transactions.
+
 **Managing Assets:** Similar to accounts, you can add, view, update, or delete your personal assets.
+
 **Viewing Data Visualizations:** The application displays pie charts representing your total money and outcome distributions.
+
 **Switching Language:** Click on "Switch Language" to toggle between English and Turkish.
