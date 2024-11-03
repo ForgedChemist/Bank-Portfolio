@@ -5,6 +5,7 @@ from tkinter import messagebox, simpledialog
 import matplotlib.pyplot as plt
 from config import load_config, save_config
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from datetime import datetime
 
 class BankAccount:
     def __init__(self, account_type, currency, exchange_rate, income_percentage=None):
@@ -40,7 +41,8 @@ def create_database():
             account_type TEXT NOT NULL,
             currency TEXT NOT NULL,
             exchange_rate REAL NOT NULL,
-            income_percentage REAL
+            income_percentage REAL,
+            date TEXT NOT NULL
         )
     ''')
     cursor.execute('''
@@ -67,10 +69,11 @@ def create_database():
 def add_account(account):
     conn = sqlite3.connect('bank_portfolio.db')
     cursor = conn.cursor()
+    current_date = datetime.now().strftime("%Y-%m-%d")
     cursor.execute('''
-        INSERT INTO accounts (account_type, currency, exchange_rate, income_percentage)
-        VALUES (?, ?, ?, ?)
-    ''', (account.account_type, account.currency, account.exchange_rate, account.income_percentage))
+        INSERT INTO accounts (account_type, currency, exchange_rate, income_percentage, date)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (account.account_type, account.currency, account.exchange_rate, account.income_percentage, current_date))
     conn.commit()
     conn.close()
 
@@ -187,6 +190,14 @@ def calculate_total_outcome():
     outcomes = get_credit_card_outcomes()
     total_outcome = sum(outcome[2] for outcome in outcomes)  # Assuming the amount is in the 3rd column
     return total_outcome
+
+def get_money_over_time():
+    conn = sqlite3.connect('bank_portfolio.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT date, SUM(balance) FROM accounts GROUP BY date')
+    data = cursor.fetchall()
+    conn.close()
+    return data
 
 def main():
     create_database()
@@ -482,6 +493,29 @@ def main():
         distribution = f"Accounts:\n{accounts_str}\n\nAssets:\n{assets_str}"
         messagebox.showinfo(lang_dict[current_lang]["info"], distribution)
 
+    def show_money_over_time_chart():
+        try:
+            data = get_money_over_time()
+            if not data:
+                messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["no_data"])
+                return
+
+            dates, balances = zip(*data)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.plot(dates, balances, marker='o')
+            ax.set_title("Overall Money Over Time")
+            ax.set_xlabel("Date")
+            ax.set_ylabel("Total Money")
+            ax.grid(True)
+
+            chart_window = ctk.CTkToplevel(root)
+            chart_window.title("Overall Money Over Time")
+            chart_canvas = FigureCanvasTkAgg(fig, master=chart_window)
+            chart_canvas.draw()
+            chart_canvas.get_tk_widget().pack(fill="both", expand=True)
+        except Exception as e:
+            messagebox.showerror(lang_dict[current_lang]["error"], str(e))
+
     # Display the charts in the chart frame
     money_chart = show_total_money_pie_chart()
     outcome_chart = show_total_outcome_pie_chart()
@@ -521,11 +555,14 @@ def main():
     show_distribution_button = ctk.CTkButton(root, text=lang_dict[current_lang]["show_money_distribution_list"], command=show_money_distribution_list_ui, width=button_width)
     show_distribution_button.pack(pady=10)
 
+    show_money_over_time_button = ctk.CTkButton(root, text="Show Money Over Time", command=show_money_over_time_chart, width=button_width)
+    show_money_over_time_button.pack(pady=10)
+
     language_button = ctk.CTkButton(root, text="Switch Language", command=switch_language, width=button_width)
     language_button.pack(pady=10)
 
     exit_button = ctk.CTkButton(root, text=lang_dict[current_lang]["exit"], command=root.quit, width=button_width)
-    exit_button.pack(pady=52)
+    exit_button.pack(pady=32)
 
 
 
