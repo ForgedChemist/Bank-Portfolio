@@ -7,6 +7,7 @@ from config import load_config, save_config
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
 
+#MARK: - Classes
 class BankAccount:
     def __init__(self, account_type, currency, exchange_rate, income_percentage=None):
         self.account_type = account_type
@@ -32,6 +33,7 @@ class Asset:
         self.quantity = quantity
         self.price_per_unit = price_per_unit
 
+#MARK: - Database Functions
 def create_database():
     conn = sqlite3.connect('bank_portfolio.db')
     cursor = conn.cursor()
@@ -211,7 +213,7 @@ def main():
 
     button_width = 250  # Updated button width to better fit the larger window
 
-    # Language dictionary
+    #MARK: Language dictionary
     lang_dict = {
         "en": {
             "add_account": "Add Account",
@@ -302,6 +304,8 @@ def main():
         exit_button.configure(text=lang_dict[current_lang]["exit"])
         show_distribution_button.configure(text=lang_dict[current_lang]["show_money_distribution_list"])
 
+
+    #MARK: - Button Logic Functions
     def switch_language():
         nonlocal current_lang
         current_lang = "tr" if current_lang == "en" else "en"
@@ -451,7 +455,7 @@ def main():
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
-    # Create a frame for the charts
+    #MARK: - Chart Logic and UI Functions
     chart_frame = ctk.CTkFrame(root)
     chart_frame.pack(side="right", fill="both", expand=True)
 
@@ -516,7 +520,7 @@ def main():
         except Exception as e:
             messagebox.showerror(lang_dict[current_lang]["error"], str(e))
 
-    # Display the charts in the chart frame
+    #MARK: - UI Elements
     money_chart = show_total_money_pie_chart()
     outcome_chart = show_total_outcome_pie_chart()
 
