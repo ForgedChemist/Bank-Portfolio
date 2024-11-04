@@ -3,21 +3,23 @@ import json
 import customtkinter as ctk
 from tkinter import messagebox, simpledialog
 import matplotlib.pyplot as plt
-from config import load_config, save_config
+from config import load_config, save_config, get_exchange_rate
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
+from forex_python.converter import CurrencyRates  # Add this import
 
 #MARK: - Classes
 class BankAccount:
-    def __init__(self, account_type, currency, exchange_rate, income_percentage=None):
+    def __init__(self, account_type, currency, exchange_rate, balance, income_percentage=None):
         self.account_type = account_type
         self.currency = currency
         self.exchange_rate = exchange_rate
+        self.balance = balance
         self.income_percentage = income_percentage
 
-    def calculate_monthly_income(self, balance):
+    def calculate_monthly_income(self):
         if self.income_percentage:
-            return balance * (self.income_percentage / 100)
+            return self.balance * (self.income_percentage / 100)
         return 0
 
 class CreditCardOutcome:
@@ -43,6 +45,7 @@ def create_database():
             account_type TEXT NOT NULL,
             currency TEXT NOT NULL,
             exchange_rate REAL NOT NULL,
+            balance REAL NOT NULL,
             income_percentage REAL,
             date TEXT NOT NULL
         )
@@ -65,6 +68,20 @@ def create_database():
             price_per_unit REAL NOT NULL
         )
     ''')
+    # Check if the balance column exists, and add it if it doesn't
+    cursor.execute("PRAGMA table_info(accounts)")
+    columns = [column[1] for column in cursor.fetchall()]
+    if 'balance' not in columns:
+        cursor.execute('''
+            ALTER TABLE accounts ADD COLUMN balance REAL NOT NULL DEFAULT 0
+        ''')
+    # Check if the date column exists, and add it if it doesn't
+    cursor.execute("PRAGMA table_info(accounts)")
+    columns = [column[1] for column in cursor.fetchall()]
+    if 'date' not in columns:
+        cursor.execute('''
+            ALTER TABLE accounts ADD COLUMN date TEXT NOT NULL DEFAULT ''
+        ''')
     conn.commit()
     conn.close()
 
@@ -73,9 +90,9 @@ def add_account(account):
     cursor = conn.cursor()
     current_date = datetime.now().strftime("%Y-%m-%d")
     cursor.execute('''
-        INSERT INTO accounts (account_type, currency, exchange_rate, income_percentage, date)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (account.account_type, account.currency, account.exchange_rate, account.income_percentage, current_date))
+        INSERT INTO accounts (account_type, currency, exchange_rate, balance, income_percentage, date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (account.account_type, account.currency, account.exchange_rate, account.balance, account.income_percentage, current_date))
     conn.commit()
     conn.close()
 
@@ -92,9 +109,9 @@ def update_account(account_id, account):
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE accounts
-        SET account_type = ?, currency = ?, exchange_rate = ?, income_percentage = ?
+        SET account_type = ?, currency = ?, exchange_rate = ?, balance = ?, income_percentage = ?
         WHERE id = ?
-    ''', (account.account_type, account.currency, account.exchange_rate, account.income_percentage, account_id))
+    ''', (account.account_type, account.currency, account.exchange_rate, account.balance, account.income_percentage, account_id))
     conn.commit()
     conn.close()
 
@@ -316,27 +333,44 @@ def main():
         save_config(config)
         update_ui_text()
 
+    def update_charts():
+        # Clear the existing charts
+        for widget in chart_frame.winfo_children():
+            widget.destroy()
+
+        # Create and display the updated charts
+        money_chart = show_total_money_pie_chart()
+        outcome_chart = show_total_outcome_pie_chart()
+
+        money_canvas = FigureCanvasTkAgg(money_chart, master=chart_frame)
+        money_canvas.draw()
+        money_canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+
+        outcome_canvas = FigureCanvasTkAgg(outcome_chart, master=chart_frame)
+        outcome_canvas.draw()
+        outcome_canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+
     def add_account_ui():
         try:
             account_type = simpledialog.askstring("Input", "Enter account type:")
             if not account_type:
                 return
+            balance = float(simpledialog.askstring("Input", "Enter balance:"))
             currency = simpledialog.askstring("Input", "Enter currency:")
             if not currency:
                 return
-            exchange_rate = float(simpledialog.askstring("Input", "Enter exchange rate to Turkish Lira:"))
+            exchange_rate = get_exchange_rate(currency)
+            if exchange_rate is None:
+                messagebox.showerror(lang_dict[current_lang]["error"], f"Error fetching exchange rate for {currency}")
+                return
             income_percentage = simpledialog.askstring("Input", "Enter income percentage (leave blank if not applicable):")
             income_percentage = float(income_percentage) if income_percentage else None
-            account = BankAccount(account_type, currency, exchange_rate, income_percentage)
+            account = BankAccount(account_type, currency, exchange_rate, balance, income_percentage)
             add_account(account)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_added_successfully"])
+            update_charts()  # Update charts after adding account
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
-
-    def view_accounts_ui():
-        accounts = get_accounts()
-        accounts_str = "\n".join([str(account) for account in accounts])
-        messagebox.showinfo(lang_dict[current_lang]["info"], accounts_str)
 
     def update_account_ui():
         try:
@@ -344,15 +378,20 @@ def main():
             account_type = simpledialog.askstring("Input", "Enter new account type:")
             if not account_type:
                 return
+            balance = float(simpledialog.askstring("Input", "Enter new balance:"))
             currency = simpledialog.askstring("Input", "Enter new currency:")
             if not currency:
                 return
-            exchange_rate = float(simpledialog.askstring("Input", "Enter new exchange rate to Turkish Lira:"))
+            exchange_rate = get_exchange_rate(currency)
+            if exchange_rate is None:
+                messagebox.showerror(lang_dict[current_lang]["error"], f"Error fetching exchange rate for {currency}")
+                return
             income_percentage = simpledialog.askstring("Input", "Enter new income percentage (leave blank if not applicable):")
             income_percentage = float(income_percentage) if income_percentage else None
-            account = BankAccount(account_type, currency, exchange_rate, income_percentage)
+            account = BankAccount(account_type, currency, exchange_rate, balance, income_percentage)
             update_account(account_id, account)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_updated_successfully"])
+            update_charts()  # Update charts after updating account
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -361,6 +400,7 @@ def main():
             account_id = int(simpledialog.askstring("Input", "Enter account ID to delete:"))
             delete_account(account_id)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_deleted_successfully"])
+            update_charts()  # Update charts after deleting account
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -381,6 +421,7 @@ def main():
             outcome = CreditCardOutcome(account_id, amount, description, account_distributions)
             add_credit_card_outcome(outcome)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_added"])
+            update_charts()  # Update charts after adding credit card outcome
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -407,6 +448,7 @@ def main():
             outcome = CreditCardOutcome(account_id, amount, description, account_distributions)
             update_credit_card_outcome(outcome_id, outcome)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_updated"])
+            update_charts()  # Update charts after updating credit card outcome
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -415,6 +457,7 @@ def main():
             outcome_id = int(simpledialog.askstring("Input", "Enter outcome ID to delete:"))
             delete_credit_card_outcome(outcome_id)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_deleted"])
+            update_charts()  # Update charts after deleting credit card outcome
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -428,6 +471,7 @@ def main():
             asset = Asset(name, quantity, price_per_unit)
             add_asset(asset)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_added_successfully"])
+            update_charts()  # Update charts after adding asset
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -447,6 +491,7 @@ def main():
             asset = Asset(name, quantity, price_per_unit)
             update_asset(asset_id, asset)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_updated_successfully"])
+            update_charts()  # Update charts after updating asset
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
 
@@ -455,41 +500,53 @@ def main():
             asset_id = int(simpledialog.askstring("Input", "Enter asset ID to delete:"))
             delete_asset(asset_id)
             messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_deleted_successfully"])
+            update_charts()  # Update charts after deleting asset
         except (TypeError, ValueError):
             messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+
+    def view_accounts_ui():
+        accounts = get_accounts()
+        accounts_str = "\n".join([f"ID: {a[0]}, Type: {a[1]}, Currency: {a[2]}, Exchange Rate: {a[3]}, Income Percentage: {a[4]}, Date: {a[5]}" for a in accounts])
+        messagebox.showinfo(lang_dict[current_lang]["info"], accounts_str)
 
     #MARK: - Chart Logic and UI Functions
     chart_frame = ctk.CTkFrame(root)
     chart_frame.pack(side="right", fill="both", expand=True)
 
     def show_total_money_pie_chart():
-        total_money = calculate_total_money()
-        if total_money == 0:
-            labels = lang_dict[current_lang]["no_data"],
+        accounts = get_accounts()
+        if not accounts:
+            labels = [lang_dict[current_lang]["no_data"]]
             sizes = [1]
             autopct = lambda p: '0.0%' if p == 100 else ''
+            total_money = 0
         else:
-            labels = lang_dict[current_lang]["total_money_distribution"],
-            sizes = [total_money]
+            labels = [f"ID: {a[0]}, Type: {a[1]}" for a in accounts]
+            sizes = [a[3] for a in accounts]  # Assuming the balance is in the 4th column
             autopct = '%1.1f%%'
+            total_money = sum(sizes)
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.pie(sizes, labels=labels, autopct=autopct, startangle=140)
         ax.set_title(lang_dict[current_lang]["total_money_distribution"])
+        plt.figtext(0.5, 0.05, f"Total Money: {total_money}", ha="center", fontsize=12)  # Adjusted position
         return fig
 
     def show_total_outcome_pie_chart():
-        total_outcome = calculate_total_outcome()
-        if total_outcome == 0:
-            labels = lang_dict[current_lang]["no_data"],
+        outcomes = get_credit_card_outcomes()
+        if not outcomes:
+            labels = [lang_dict[current_lang]["no_data"]]
             sizes = [1]
             autopct = lambda p: '0.0%' if p == 100 else ''
+            total_outcome = 0
         else:
-            labels = lang_dict[current_lang]["total_outcome_distribution"],
-            sizes = [total_outcome]
+            labels = [f"ID: {o[0]}, Desc: {o[3]}" for o in outcomes]
+            sizes = [o[2] for o in outcomes]  # Assuming the amount is in the 3rd column
             autopct = '%1.1f%%'
+            total_outcome = sum(sizes)
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.pie(sizes, labels=labels, autopct=autopct, startangle=140)
         ax.set_title(lang_dict[current_lang]["total_outcome_distribution"])
+        plt.figtext(0.5, 0.01, f"Total debt: {total_outcome}", ha="center", fontsize=12)
         return fig
 
     def show_money_distribution_list_ui():
@@ -571,11 +628,8 @@ def main():
     exit_button = ctk.CTkButton(root, text=lang_dict[current_lang]["exit"], command=root.quit, width=button_width)
     exit_button.pack(pady=32)
 
-
-
-
-    update_ui_text()  # Update UI text based on the loaded language
-
+    update_ui_text()
+    update_charts()
     root.mainloop()
 
 if __name__ == "__main__":
