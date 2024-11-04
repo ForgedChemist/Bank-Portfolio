@@ -352,78 +352,78 @@ def main():
 
     def add_account_ui():
         try:
-            account_type = simpledialog.askstring("Input", "Enter account type:")
+            account_type = simpledialog.askstring("Input", "Enter account type:", parent=root)
             if not account_type:
                 return
-            balance = float(simpledialog.askstring("Input", "Enter balance:"))
-            currency = simpledialog.askstring("Input", "Enter currency:")
+            balance = float(simpledialog.askstring("Input", "Enter balance:", parent=root))
+            currency = simpledialog.askstring("Input", "Enter currency:", parent=root)
             if not currency:
                 return
             exchange_rate = get_exchange_rate(currency)
             if exchange_rate is None:
-                messagebox.showerror(lang_dict[current_lang]["error"], f"Error fetching exchange rate for {currency}")
+                messagebox.showerror(lang_dict[current_lang]["error"], f"Error fetching exchange rate for {currency}", parent=root)
                 return
-            income_percentage = simpledialog.askstring("Input", "Enter income percentage (leave blank if not applicable):")
+            income_percentage = simpledialog.askstring("Input", "Enter income percentage (leave blank if not applicable):", parent=root)
             income_percentage = float(income_percentage) if income_percentage else None
             account = BankAccount(account_type, currency, exchange_rate, balance, income_percentage)
             add_account(account)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_added_successfully"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_added_successfully"], parent=root)
             update_charts()  # Update charts after adding account
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def update_account_ui():
         try:
-            account_id = int(simpledialog.askstring("Input", "Enter account ID to update:"))
-            account_type = simpledialog.askstring("Input", "Enter new account type:")
+            account_id = int(simpledialog.askstring("Input", "Enter account ID to update:", parent=root))
+            account_type = simpledialog.askstring("Input", "Enter new account type:", parent=root)
             if not account_type:
                 return
-            balance = float(simpledialog.askstring("Input", "Enter new balance:"))
-            currency = simpledialog.askstring("Input", "Enter new currency:")
+            balance = float(simpledialog.askstring("Input", "Enter new balance:", parent=root))
+            currency = simpledialog.askstring("Input", "Enter new currency:", parent=root)
             if not currency:
                 return
             exchange_rate = get_exchange_rate(currency)
             if exchange_rate is None:
-                messagebox.showerror(lang_dict[current_lang]["error"], f"Error fetching exchange rate for {currency}")
+                messagebox.showerror(lang_dict[current_lang]["error"], f"Error fetching exchange rate for {currency}", parent=root)
                 return
-            income_percentage = simpledialog.askstring("Input", "Enter new income percentage (leave blank if not applicable):")
+            income_percentage = simpledialog.askstring("Input", "Enter new income percentage (leave blank if not applicable):", parent=root)
             income_percentage = float(income_percentage) if income_percentage else None
             account = BankAccount(account_type, currency, exchange_rate, balance, income_percentage)
             update_account(account_id, account)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_updated_successfully"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_updated_successfully"], parent=root)
             update_charts()  # Update charts after updating account
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def delete_account_ui():
         try:
-            account_id = int(simpledialog.askstring("Input", "Enter account ID to delete:"))
+            account_id = int(simpledialog.askstring("Input", "Enter account ID to delete:", parent=root))
             delete_account(account_id)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_deleted_successfully"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["account_deleted_successfully"], parent=root)
             update_charts()  # Update charts after deleting account
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def add_credit_card_outcome_ui():
         try:
-            account_id = int(simpledialog.askstring("Input", "Enter account ID:"))
-            amount = float(simpledialog.askstring("Input", "Enter amount:"))
-            description = simpledialog.askstring("Input", "Enter description:")
+            account_id = int(simpledialog.askstring("Input", "Enter account ID:", parent=root))
+            amount = float(simpledialog.askstring("Input", "Enter amount:", parent=root))
+            description = simpledialog.askstring("Input", "Enter description:", parent=root)
             if not description:
                 return
             account_distributions = {}
             while True:
-                dist_account_id = simpledialog.askstring("Input", "Enter account ID used to pay (leave blank to finish):")
+                dist_account_id = simpledialog.askstring("Input", "Enter account ID used to pay (leave blank to finish):", parent=root)
                 if not dist_account_id:
                     break
-                dist_amount = float(simpledialog.askstring("Input", "Enter amount taken from this account:"))
+                dist_amount = float(simpledialog.askstring("Input", "Enter amount taken from this account:", parent=root))
                 account_distributions[int(dist_account_id)] = dist_amount
             outcome = CreditCardOutcome(account_id, amount, description, account_distributions)
             add_credit_card_outcome(outcome)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_added"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_added"], parent=root)
             update_charts()  # Update charts after adding credit card outcome
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def view_credit_card_outcomes_ui():
         outcomes = get_credit_card_outcomes()
@@ -432,48 +432,48 @@ def main():
 
     def update_credit_card_outcome_ui():
         try:
-            outcome_id = int(simpledialog.askstring("Input", "Enter outcome ID to update:"))
-            account_id = int(simpledialog.askstring("Input", "Enter new account ID:"))
-            amount = float(simpledialog.askstring("Input", "Enter new amount:"))
-            description = simpledialog.askstring("Input", "Enter new description:")
+            outcome_id = int(simpledialog.askstring("Input", "Enter outcome ID to update:", parent=root))
+            account_id = int(simpledialog.askstring("Input", "Enter new account ID:", parent=root))
+            amount = float(simpledialog.askstring("Input", "Enter new amount:", parent=root))
+            description = simpledialog.askstring("Input", "Enter new description:", parent=root)
             if not description:
                 return
             account_distributions = {}
             while True:
-                dist_account_id = simpledialog.askstring("Input", "Enter new account ID used to pay (leave blank to finish):")
+                dist_account_id = simpledialog.askstring("Input", "Enter new account ID used to pay (leave blank to finish):", parent=root)
                 if not dist_account_id:
                     break
-                dist_amount = float(simpledialog.askstring("Input", "Enter new amount taken from this account:"))
+                dist_amount = float(simpledialog.askstring("Input", "Enter new amount taken from this account:", parent=root))
                 account_distributions[int(dist_account_id)] = dist_amount
             outcome = CreditCardOutcome(account_id, amount, description, account_distributions)
             update_credit_card_outcome(outcome_id, outcome)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_updated"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_updated"], parent=root)
             update_charts()  # Update charts after updating credit card outcome
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def delete_credit_card_outcome_ui():
         try:
-            outcome_id = int(simpledialog.askstring("Input", "Enter outcome ID to delete:"))
+            outcome_id = int(simpledialog.askstring("Input", "Enter outcome ID to delete:", parent=root))
             delete_credit_card_outcome(outcome_id)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_deleted"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["credit_card_outcome_deleted"], parent=root)
             update_charts()  # Update charts after deleting credit card outcome
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def add_asset_ui():
         try:
-            name = simpledialog.askstring("Input", "Enter asset name:")
+            name = simpledialog.askstring("Input", "Enter asset name:", parent=root)
             if not name:
                 return
-            quantity = float(simpledialog.askstring("Input", "Enter quantity:"))
-            price_per_unit = float(simpledialog.askstring("Input", "Enter price per unit:"))
+            quantity = float(simpledialog.askstring("Input", "Enter quantity:", parent=root))
+            price_per_unit = float(simpledialog.askstring("Input", "Enter price per unit:", parent=root))
             asset = Asset(name, quantity, price_per_unit)
             add_asset(asset)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_added_successfully"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_added_successfully"], parent=root)
             update_charts()  # Update charts after adding asset
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def view_assets_ui():
         assets = get_assets()
@@ -482,27 +482,27 @@ def main():
 
     def update_asset_ui():
         try:
-            asset_id = int(simpledialog.askstring("Input", "Enter asset ID to update:"))
-            name = simpledialog.askstring("Input", "Enter new asset name:")
+            asset_id = int(simpledialog.askstring("Input", "Enter asset ID to update:", parent=root))
+            name = simpledialog.askstring("Input", "Enter new asset name:", parent=root)
             if not name:
                 return
-            quantity = float(simpledialog.askstring("Input", "Enter new quantity:"))
-            price_per_unit = float(simpledialog.askstring("Input", "Enter new price per unit:"))
+            quantity = float(simpledialog.askstring("Input", "Enter new quantity:", parent=root))
+            price_per_unit = float(simpledialog.askstring("Input", "Enter new price per unit:", parent=root))
             asset = Asset(name, quantity, price_per_unit)
             update_asset(asset_id, asset)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_updated_successfully"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_updated_successfully"], parent=root)
             update_charts()  # Update charts after updating asset
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def delete_asset_ui():
         try:
-            asset_id = int(simpledialog.askstring("Input", "Enter asset ID to delete:"))
+            asset_id = int(simpledialog.askstring("Input", "Enter asset ID to delete:", parent=root))
             delete_asset(asset_id)
-            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_deleted_successfully"])
+            messagebox.showinfo(lang_dict[current_lang]["info"], lang_dict[current_lang]["asset_deleted_successfully"], parent=root)
             update_charts()  # Update charts after deleting asset
         except (TypeError, ValueError):
-            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"])
+            messagebox.showerror(lang_dict[current_lang]["error"], lang_dict[current_lang]["invalid_input"], parent=root)
 
     def view_accounts_ui():
         accounts = get_accounts()
